@@ -16,13 +16,13 @@
 //fix the issue of collisions to be more robust
 //have a size on the bricks
 //have a gameover state
-//have a score system
+//remove the cruft about scores from pong
 
 
 
 #define BRICKGAP 2
 #define BRICKCOLS 10
-#define BRICKROWS 14 //temp halved
+#define BRICKROWS 14 
 
 #define BRICKWIDTH 80
 #define BRICKHEIGHT 20 //temp doubled
@@ -100,12 +100,16 @@ void draw_bricks(SDL_Renderer *renderer, Brick *bricks);
 
 Brick init_brick(int x, int y);
 
-void reset_bricks(Brick *bricks)
+void reset_bricks(Brick *bricks, int empty_rows)
 {
+    
     for (int i = 0; i < BRICKROWS; i++) {
 	for (int j = 0; j < BRICKCOLS; j++) {
 	    Brick brick = init_brick(j*(BRICKWIDTH) , i*(BRICKHEIGHT));
 	    bricks[i*BRICKCOLS + j] = brick;
+	    if (i < empty_rows) {
+		bricks[i*BRICKCOLS + j].exists = 0;
+	    }
 	}
     }
 }
@@ -142,16 +146,15 @@ int main(int argc, char **argv)
     int score_p2 = 0;
     GAMESTATE gamestate = GAME_START;
 
-    Brick *bricks = (Brick*)malloc(sizeof(Brick)*BRICKROWS*BRICKCOLS);
-    for (int i = 0; i < BRICKROWS; i++) {
-	for (int j = 0; j < BRICKCOLS; j++) {
-	    Brick brick = init_brick(j*(BRICKWIDTH) , i*(BRICKHEIGHT));
-	    bricks[i*BRICKCOLS + j] = brick;
-	}
-    }
-
     int bricks_destroyed = 0;
-    int total_bricks = BRICKROWS * BRICKCOLS;
+    int empty_rows = 3;
+    int total_bricks = BRICKROWS * BRICKCOLS - (empty_rows * BRICKCOLS);
+    
+    Brick *bricks = (Brick*)malloc(sizeof(Brick)*BRICKROWS*BRICKCOLS);
+    reset_bricks(bricks, empty_rows);
+
+
+
     
     while (game_running) {
 	current_time = SDL_GetTicks();
@@ -198,9 +201,10 @@ int main(int argc, char **argv)
 	    }
 	    if (bricks_destroyed == total_bricks) {
 		bricks_destroyed = 0;
-		reset_bricks(bricks);
+		reset_bricks(bricks, empty_rows);
 		reset_ball(&ball);
 		gamestate = GAME_START;
+		score_p1 = 0;
 	    }
 	} else if (gamestate == GAME_OVER) {
 	    SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0x00, 0x00);
@@ -307,6 +311,7 @@ void move_ball(Brick *bricks, Ball *ball, float ball_speed, Paddle paddle_p1, fl
     //paddle
 
     if (ball->position.y <= 0) {
+	ball->position.y += ball_speed * dt;
 	ball->heading.y *= -1.0f;
     }
 
